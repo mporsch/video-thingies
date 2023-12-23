@@ -1,3 +1,4 @@
+#include "opencv2/bgsegm.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/video/background_segm.hpp"
@@ -118,6 +119,105 @@ struct FrameQueue
   }
 };
 
+cv::Ptr<cv::BackgroundSubtractor> createBackgroundSubtractor()
+{
+#if BACKGROUND_SUBTRACTOR == BACKGROUND_SUBTRACTOR_MOG2
+
+  constexpr int history = 500;
+  constexpr double varThreshold = 16;
+  constexpr bool detectShadows = true;
+  return cv::createBackgroundSubtractorMOG2(history, varThreshold, detectShadows);
+
+#elif BACKGROUND_SUBTRACTOR == BACKGROUND_SUBTRACTOR_KNN
+
+  constexpr int history = 500;
+  constexpr double dist2Threshold = 400.0;
+  constexpr bool detectShadows = true;
+  return cv::createBackgroundSubtractorKNN(history, dist2Threshold, detectShadows);
+
+#elif BACKGROUND_SUBTRACTOR == BACKGROUND_SUBTRACTOR_GMG
+
+  constexpr int initializationFrames = 30; //120;
+  constexpr double decisionThreshold = 0.8;
+  return cv::bgsegm::createBackgroundSubtractorGMG(initializationFrames, decisionThreshold);
+
+#elif BACKGROUND_SUBTRACTOR == BACKGROUND_SUBTRACTOR_MOG
+
+  constexpr int history = 200;
+  constexpr int nmixtures = 5;
+  constexpr double backgroundRatio = 0.7;
+  constexpr double noiseSigma = 0;
+  return cv::bgsegm::createBackgroundSubtractorMOG(history, nmixtures, backgroundRatio, noiseSigma);
+
+#elif BACKGROUND_SUBTRACTOR == BACKGROUND_SUBTRACTOR_CNT
+
+  constexpr int minPixelStability = 15;
+  constexpr bool useHistory = true;
+  constexpr int maxPixelStability = 15*60;
+  constexpr bool isParallel = true;
+  return cv::bgsegm::createBackgroundSubtractorCNT(minPixelStability, useHistory, maxPixelStability, isParallel);
+
+#elif BACKGROUND_SUBTRACTOR == BACKGROUND_SUBTRACTOR_GSOC
+
+  constexpr int mc = cv::bgsegm::LSBP_CAMERA_MOTION_COMPENSATION_NONE;
+  constexpr int nSamples = 20;
+  constexpr float replaceRate = 0.003f;
+  constexpr float propagationRate = 0.01f;
+  constexpr int hitsThreshold = 32;
+  constexpr float alpha = 0.01f;
+  constexpr float beta = 0.0022f;
+  constexpr float blinkingSupressionDecay = 0.1f;
+  constexpr float blinkingSupressionMultiplier = 0.1f;
+  constexpr float noiseRemovalThresholdFacBG = 0.0004f;
+  constexpr float noiseRemovalThresholdFacFG = 0.0008f;
+  return cv::bgsegm::createBackgroundSubtractorGSOC(
+    mc,
+    nSamples,
+    replaceRate,
+    propagationRate,
+    hitsThreshold,
+    alpha,
+    beta,
+    blinkingSupressionDecay,
+    blinkingSupressionMultiplier,
+    noiseRemovalThresholdFacBG,
+    noiseRemovalThresholdFacFG);
+
+#elif BACKGROUND_SUBTRACTOR == BACKGROUND_SUBTRACTOR_LSBP
+
+  constexpr int mc = cv::bgsegm::LSBP_CAMERA_MOTION_COMPENSATION_NONE;
+  constexpr int nSamples = 20;
+  constexpr int LSBPRadius = 16;
+  constexpr float Tlower = 2.0f;
+  constexpr float Tupper = 32.0f;
+  constexpr float Tinc = 1.0f;
+  constexpr float Tdec = 0.05f;
+  constexpr float Rscale = 10.0f;
+  constexpr float Rincdec = 0.005f;
+  constexpr float noiseRemovalThresholdFacBG = 0.0004f;
+  constexpr float noiseRemovalThresholdFacFG = 0.0008f;
+  constexpr int LSBPthreshold = 8;
+  constexpr int minCount = 2;
+  return cv::bgsegm::createBackgroundSubtractorLSBP(
+    mc,
+    nSamples,
+    LSBPRadius,
+    Tlower,
+    Tupper,
+    Tinc,
+    Tdec,
+    Rscale,
+    Rincdec,
+    noiseRemovalThresholdFacBG,
+    noiseRemovalThresholdFacFG,
+    LSBPthreshold,
+    minCount);
+
+#else
+  #error invalid BACKGROUND_SUBTRACTOR
+#endif
+}
+
 } // unnamed namespace
 
 int main(int argc, char** argv)
@@ -131,15 +231,7 @@ try {
     throw std::runtime_error("failed to open video capture");
   }
 
-  constexpr int history = 500;
-  constexpr bool detectShadows = false; //true;
-#ifdef USE_BACKGROUND_KNN
-  constexpr double dist2Threshold = 400.0;
-  auto backSub = cv::createBackgroundSubtractorKNN(history, dist2Threshold, detectShadows);
-#else // USE_BACKGROUND_KNN
-  constexpr double varThreshold = 16;
-  auto backSub = cv::createBackgroundSubtractorMOG2(history, varThreshold, detectShadows);
-#endif // USE_BACKGROUND_KNN
+  auto backSub = createBackgroundSubtractor();
 
   cv::Mat current;
   cv::Mat foreground;
