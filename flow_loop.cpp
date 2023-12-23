@@ -112,7 +112,7 @@ struct FrameQueue
   }
 };
 
-void calcOpticalFlow(cv::Mat prev, cv::Mat next, cv::Mat flow)
+void calcOpticalFlow(const cv::Mat& prev, const cv::Mat& next, cv::Mat& flow)
 {
   constexpr double pyr_scale = 0.5;
   constexpr int levels = 3;
@@ -134,14 +134,14 @@ void calcOpticalFlow(cv::Mat prev, cv::Mat next, cv::Mat flow)
     flags);
 }
 
-void flowToMap(cv::Mat src, cv::Mat dst)
+void flowToMap(cv::Mat& mat)
 {
-  for(int y = 0; y < src.rows; ++y) {
-    for(int x = 0; x < src.cols; ++x) {
-      auto f = src.at<cv::Point2f>(y, x);
-      dst.at<cv::Point2f>(y, x) = cv::Point2f(x + f.x, y + f.y);
-    }
-  }
+  mat.forEach<cv::Point2f>(
+    [](cv::Point2f& px, const int position[]) {
+      px = cv::Point2f(
+        px.x + position[1],
+        px.y + position[0]);
+    });
 }
 
 } // unnamed namespace
@@ -166,6 +166,7 @@ try {
 
   auto previous = cv::Mat(captured.size(), captured.type());
   auto flow = cv::Mat(captured.size(), CV_32FC2);
+  cv::Mat remapped;
   for(;;) {
     // grab next camera frame
     current.copyTo(previous);
@@ -174,7 +175,7 @@ try {
 
     // calculate optical flow beteen the two frames
     calcOpticalFlow(previous, current, flow);
-    flowToMap(flow, flow);
+    flowToMap(flow);
 
     // present frame to queue
     q.enqueueMaybe(flow);
@@ -183,10 +184,10 @@ try {
     auto&& queued = q.get();
 
     // remap captured with queued flow map
-    cv::remap(captured, captured, queued, cv::Mat(), cv::INTER_CUBIC);
+    cv::remap(captured, remapped, queued, cv::Mat(), cv::INTER_CUBIC);
 
     // display
-    cv::imshow("Display window", captured);
+    cv::imshow("Display window", remapped);
     if(cv::waitKey(cmd.frameInterval) == 'q') {
       exit(EXIT_SUCCESS);
     }
