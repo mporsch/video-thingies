@@ -31,3 +31,11 @@ target_compile_definitions(background_loop PRIVATE
 )
 target_include_directories(background_loop PRIVATE ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(background_loop PRIVATE ${OpenCV_LIBS})
+
+add_executable(flow_loop flow_loop.cpp)
+target_compile_features(flow_loop PRIVATE cxx_std_11)
+target_compile_definitions(flow_loop PRIVATE
+  $<$<BOOL:${DEBUG_QUEUE}>:DEBUG_QUEUE>
+)
+target_include_directories(flow_loop PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(flow_loop PRIVATE ${OpenCV_LIBS})
