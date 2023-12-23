@@ -70,14 +70,27 @@ struct FrameQueue
   size_t skipIn;
   size_t skipOut;
 
+  // input frame index used to skip some frames entirely
+  size_t idxIn;
+
+  // output frame index used to iterate queue frames for display
+  size_t idxOut;
+
   // underlying frame storage
   std::vector<Frame> storage;
 
-  // input frame index used to skip some frames entirely
-  size_t idxIn = 0;
-
-  // output frame index used to iterate queue frames for display
-  size_t idxOut = 0;
+  FrameQueue(
+      size_t maxSize,
+      size_t skipIn,
+      size_t skipOut)
+    : maxSize(maxSize)
+    , skipIn(skipIn)
+    , skipOut(skipOut)
+    , idxIn(0)
+    , idxOut(0)
+  {
+    storage.reserve(this->maxSize);
+  }
 
   void enqueueMaybe(const Frame& f)
   {
@@ -111,7 +124,7 @@ int main(int argc, char** argv)
 try {
   // parse command line arguments
   CommandLineArguments cmd(argc, argv);
-  auto q = FrameQueue{cmd.queueSize, cmd.skipIn, cmd.skipOut};
+  auto q = FrameQueue(cmd.queueSize, cmd.skipIn, cmd.skipOut);
 
   auto capture = cv::VideoCapture(0);
   if(!capture.isOpened()) {
