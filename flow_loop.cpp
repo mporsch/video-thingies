@@ -1,3 +1,5 @@
+#include "frame_queue.h"
+
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
@@ -6,7 +8,6 @@
 #include <cstddef>
 #include <iostream>
 #include <stdexcept>
-#include <vector>
 
 namespace {
 
@@ -50,65 +51,6 @@ struct CommandLineArguments
     if(frameInterval < 0) {
       throw std::invalid_argument("'frame_interval' must be >=0");
     }
-  }
-};
-
-using Frame = cv::Mat;
-
-struct FrameQueue
-{
-  // maximum number of frames to keep
-  size_t maxSize;
-
-  // skip count used to skip some frames entirely
-  size_t skipIn;
-  size_t skipOut;
-
-  // input frame index used to skip some frames entirely
-  size_t idxIn;
-
-  // output frame index used to iterate queue frames for display
-  size_t idxOut;
-
-  // underlying frame storage
-  std::vector<Frame> storage;
-
-  FrameQueue(
-      size_t maxSize,
-      size_t skipIn,
-      size_t skipOut)
-    : maxSize(maxSize)
-    , skipIn(skipIn)
-    , skipOut(skipOut)
-    , idxIn(0)
-    , idxOut(0)
-  {
-    storage.reserve(this->maxSize);
-  }
-
-  void enqueueMaybe(const Frame& f)
-  {
-    if((idxIn++ % skipIn) != 0) {
-      return;
-    }
-    if(storage.size() >= maxSize) {
-      storage.erase(storage.begin());
-      --idxOut; // rollover is considered in get()
-    }
-    storage.push_back(f.clone());
-  }
-
-  const Frame& get()
-  {
-    if(idxOut >= storage.size()) {
-      idxOut %= storage.size();
-    }
-#ifdef DEBUG_QUEUE
-    std::cout << "getting " << idxOut  << " (of " << storage.size() << ")" << std::endl;
-#endif // DEBUG_QUEUE
-    auto&& f = storage.at(idxOut);
-    idxOut += skipOut;
-    return f;
   }
 };
 
@@ -173,12 +115,15 @@ try {
     capture >> captured;
     cv::cvtColor(captured, current, cv::COLOR_BGR2GRAY);
 
-    // calculate optical flow beteen the two frames
-    calcOpticalFlow(previous, current, flow);
-    flowToMap(flow);
-
     // present frame to queue
-    q.enqueueMaybe(flow);
+    q.enqueueMaybe(
+      [&]() -> cv::Mat {
+        // calculate optical flow beteen the two frames
+        calcOpticalFlow(previous, current, flow);
+        flowToMap(flow);
+
+        return flow.clone();
+      });
 
     // get a queued (flow map) frame
     auto&& queued = q.get();
