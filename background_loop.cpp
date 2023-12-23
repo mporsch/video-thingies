@@ -1,8 +1,8 @@
-#include "opencv2/bgsegm.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/video/background_segm.hpp"
-#include "opencv2/videoio.hpp"
+#include <opencv2/bgsegm.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/video/background_segm.hpp>
+#include <opencv2/videoio.hpp>
 
 #include <cstddef>
 #include <iostream>
@@ -235,7 +235,9 @@ try {
 
   cv::Mat current;
   cv::Mat foreground;
-  const auto morphKernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(cmd.morphSize, cmd.morphSize));
+  const auto morphKernel = cv::getStructuringElement(
+    cv::MORPH_ELLIPSE,
+    cv::Size(cmd.morphSize, cmd.morphSize));
   for(;;) {
     // grab next camera frame
     capture >> current;
