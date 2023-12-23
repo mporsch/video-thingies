@@ -3,7 +3,6 @@
 #include "opencv2/video/background_segm.hpp"
 #include "opencv2/videoio.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <iostream>
 #include <stdexcept>
@@ -94,13 +93,15 @@ struct FrameQueue
 
   const Frame& get()
   {
-    assert(!storage.empty());
-    auto idx = idxOut % storage.size();
+    if(idxOut >= storage.size()) {
+      idxOut %= storage.size();
+    }
 #ifdef DEBUG_QUEUE
-    std::cout << "getting " << idx  << " (of " << storage.size() << ")" << std::endl;
+    std::cout << "getting " << idxOut  << " (of " << storage.size() << ")" << std::endl;
 #endif // DEBUG_QUEUE
+    auto&& f = storage.at(idxOut);
     idxOut += skipOut;
-    return storage.at(idx);
+    return f;
   }
 };
 
