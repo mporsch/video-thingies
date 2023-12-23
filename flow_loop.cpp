@@ -95,7 +95,7 @@ struct FrameQueue
       storage.erase(storage.begin());
       --idxOut; // rollover is considered in get()
     }
-    storage.push_back(f);
+    storage.push_back(f.clone());
   }
 
   const Frame& get()
