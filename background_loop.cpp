@@ -16,7 +16,7 @@ struct CommandLineArguments
 {
   size_t queueSize;
   size_t skipIn;
-  size_t skipOut;
+  int skipOut;
   int morphSize;
   int frameInterval;
 
@@ -26,7 +26,7 @@ struct CommandLineArguments
 {help h usage ? |    | print this message }
 {queue_size     | 30 | number of frames to queue }
 {skip_in        |  1 | number of queue frames to skip from input }
-{skip_out       |  3 | number of queue frames to skip during output }
+{skip_out       |  3 | number of queue frames to skip during output (can be negative) }
 {morph_size     |  5 | size of mophological close }
 {frame_interval | 33 | 1/fps for output video }
 )";
@@ -48,9 +48,6 @@ struct CommandLineArguments
 
     if(skipIn < 1) {
       throw std::invalid_argument("'skip_in' must be >0");
-    }
-    if(skipOut < 1) {
-      throw std::invalid_argument("'skip_out' must be >0");
     }
     if(morphSize <= 0) {
       throw std::invalid_argument("'morph_size' must be >0");

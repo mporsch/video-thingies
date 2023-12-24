@@ -15,13 +15,14 @@ struct FrameQueue
 
   // skip count used to skip some frames entirely
   size_t skipIn;
-  size_t skipOut;
+  int skipOut;
 
   // input frame index used to skip some frames entirely
   size_t idxIn;
 
   // output frame index used to iterate queue frames for display
-  size_t idxOut;
+  // ideally we could safely handle over/underflow but we will rarely ever hit the type's limits
+  int idxOut;
 
   // underlying frame storage
   std::vector<Frame> storage;
@@ -29,7 +30,7 @@ struct FrameQueue
   FrameQueue(
       size_t maxSize,
       size_t skipIn,
-      size_t skipOut)
+      int skipOut)
     : maxSize(maxSize)
     , skipIn(skipIn)
     , skipOut(skipOut)
@@ -54,7 +55,7 @@ struct FrameQueue
 
   const Frame& get()
   {
-    if(idxOut >= storage.size()) {
+    if(idxOut < 0 || static_cast<size_t>(idxOut) >= storage.size()) {
       idxOut %= storage.size();
     }
 #ifdef DEBUG_QUEUE
