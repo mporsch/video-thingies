@@ -92,7 +92,7 @@ cv::Ptr<cv::BackgroundSubtractor> createBackgroundSubtractor()
 
   constexpr int minPixelStability = 15;
   constexpr bool useHistory = true;
-  constexpr int maxPixelStability = 15*60;
+  constexpr int maxPixelStability = 15 * 60;
   constexpr bool isParallel = true;
   return cv::bgsegm::createBackgroundSubtractorCNT(minPixelStability, useHistory, maxPixelStability, isParallel);
 
@@ -189,11 +189,21 @@ try {
 
     // determine foreground mask
     backSub->apply(current, foreground);
+
+    // postprocess foreground mask
+    static auto anchor = cv::Point(-1, -1);
+    constexpr int iterations = 1;
+    constexpr int borderType = cv::BORDER_CONSTANT;
+    static auto&& borderValue = cv::morphologyDefaultBorderValue();
     cv::morphologyEx(
       foreground,
       foreground,
       cv::MORPH_CLOSE,
-      morphKernel);
+      morphKernel,
+      anchor,
+      iterations,
+      borderType,
+      borderValue);
 
     // get a queued (background) frame
     auto queued = q.get().clone();
